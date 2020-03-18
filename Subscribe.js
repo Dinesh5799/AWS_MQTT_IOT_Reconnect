@@ -8,7 +8,10 @@ export class StoreAPI {
     try {
       console.log("Subscribing..........");
       let credentials = {};
+      let iotauthurl = config.IOT.POLICY_URL;
+      let identity;
       await Auth.currentCredentials().then(info => {
+        identity = info._identityId;
         credentials.accessKeyId =
           info &&
           info.data &&
@@ -25,6 +28,19 @@ export class StoreAPI {
           info.data.Credentials &&
           info.data.Credentials.SessionToken;
       });
+      await fetch(iotauthurl, {
+        method: "POST",
+        headers: {
+          Authorization: Store.get("JWTTOKEN"),
+          Identity: identity
+        }
+      })
+        .then(function(response) {
+          console.log("Iot Auth Success");
+        })
+        .catch(err => {
+          console.log("Iot Auth Failure: ", err);
+        });//Doing this to add policy. It can be done once when user logs in.
       let host = process.env.REACT_APP_MQTT_URL;//MQTT url which looks like a23xxxxxxxxxx-ats.iot.xxxxxxxeast-1.amazonaws.com
       let region = process.env.REACT_APP_REGION; //xxxxxxxeast-1
       let MQTT_ORG_TOPIC = process.env.REACT_APP_MQTT_ORG_TOPIC;//MQTT Topic to be subscribed to.
