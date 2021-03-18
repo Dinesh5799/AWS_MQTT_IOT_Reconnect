@@ -44,10 +44,16 @@ export class StoreAPI {
       let host = process.env.REACT_APP_MQTT_URL;//MQTT url which looks like a23xxxxxxxxxx-ats.iot.xxxxxxxeast-1.amazonaws.com
       let region = process.env.REACT_APP_REGION; //xxxxxxxeast-1
       let MQTT_ORG_TOPIC = process.env.REACT_APP_MQTT_ORG_TOPIC;//MQTT Topic to be subscribed to.
-      const ioturl = SigV4Utils.getSignedUrl(host, region, credentials);
-      let client = mqtt.connect(ioturl);
-      client.on("connect", () => {
-        client.subscribe(MQTT_ORG_TOPIC, err => {
+      let connection =  mqtt.connect(
+        SigV4Utils.getSignedUrl(host, region, credentials),
+        {
+          transformWsUrl: (url, options, client) => {
+            return SigV4Utils.getSignedUrl(host, region, credentials);//transformWsUrl as when trying to re-connect it will fetch updated creds.
+          },
+        }
+      );
+      connection.on("connect", () => {
+        connection.subscribe(MQTT_ORG_TOPIC, err => {
           if (!err) {
             console.log("Subscribed successfully");
             if (!firTimeConnect) {
@@ -57,7 +63,7 @@ export class StoreAPI {
           }
         });
       });
-      client.on("message", (topic, message) => {
+      connection.on("message", (topic, message) => {
         console.log("Message Topic from IOTT", topic);
         console.log(
           "Message received from IOTT",
